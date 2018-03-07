@@ -7,6 +7,12 @@ SRAs.each {
   sra_dir.mkdir() 
 }
 
+Local_file = file(params.local_list_path)
+Local =  Local_File.readLines()
+Local.each {
+  local_dir = file("$it")
+  local_dir.mkdir()
+}
 
 process fastq_dump {
   module 'sratoolkit'
