@@ -2,10 +2,14 @@
 
 SRA_file = file(params.sra_list_path)
 SRAs = SRA_file.readLines()
-SRAs.each { 
+SRAs.each {
   sra_dir = file("$it")
-  sra_dir.mkdir() 
+  sra_dir.mkdir()
 }
+
+LOCAL_sample_file = file(params.local_samples_path)
+LOCAL_samples = LOCAL_sample_file.readLines()
+
 
 
 process fastq_dump {
@@ -15,13 +19,13 @@ process fastq_dump {
 
   input:
     val sra from SRAs
- 
+
   output:
     file "${sra}_{1,2}.fastq" into raw_fastq
 
 
   """
-    fastq-dump --split-files $sra 
+    fastq-dump --split-files $sra
   """
 }
 
@@ -32,8 +36,8 @@ process fastq_dump {
  * variable be set in the trimmomatic module. This indicates
  * the path where the clipping files are stored.
  *
- * depends: download 
- * 
+ * depends: download
+ *
  */
 process trimmomatic {
 
@@ -41,7 +45,7 @@ process trimmomatic {
   publishDir "$sra", mode: 'link'
   // Trimmomatic can't work with a symlink
   stageInMode "link"
-  
+
   input:
     val sra from SRAs
     file "${sra}_?.fastq" from raw_fastq
@@ -67,7 +71,7 @@ process trimmomatic {
           LEADING:3 \
           TRAILING:6 \
           SLIDINGWINDOW:4:15 \
-          MINLEN:50 
+          MINLEN:50
       else
         # For ease of the next steps, rename the reverse file to the forward.
         # since these are non-paired it really shouldn't matter.
@@ -84,7 +88,7 @@ process trimmomatic {
           LEADING:3 \
           TRAILING:6 \
           SLIDINGWINDOW:4:15 \
-          MINLEN:50 
+          MINLEN:50
       fi
       """
 }
@@ -96,7 +100,7 @@ process trimmomatic {
  */
 process hisat2 {
 
-  module 'hisat2' 
+  module 'hisat2'
   publishDir "$sra", mode: 'link'
   stageInMode "link"
 
@@ -107,7 +111,7 @@ process hisat2 {
 
   output:
     file "${sra}_vs_${params.ref.prefix}.sam" into sam_files
-  
+
   script:
     """
       export HISAT2_INDEXES=${params.ref.path}
@@ -122,8 +126,8 @@ process hisat2 {
           -S ${sra}_vs_${params.ref.prefix}.sam \
           -t \
           -p 1 \
-          --dta-cufflinks 
-      else 
+          --dta-cufflinks
+      else
         hisat2 \
           -x ${params.ref.prefix} \
           --no-spliced-alignment \
@@ -132,9 +136,9 @@ process hisat2 {
           -S ${sra}_vs_${params.ref.prefix}.sam \
           -t \
           -p 1 \
-          --dta-cufflinks 
+          --dta-cufflinks
       fi
-    """     
+    """
 }
 
 
@@ -147,17 +151,17 @@ process samtools_sort {
   module 'samtools'
   publishDir "$sra", mode: 'link'
   stageInMode "link"
- 
+
   input:
     val sra from SRAs
     file "${sra}_vs_${params.ref.prefix}.sam" from sam_files
 
-  output: 
+  output:
     file "${sra}_vs_${params.ref.prefix}.bam" into bam4index, bam4stringtie
 
   script:
     """
-    samtools sort -o ${sra}_vs_${params.ref.prefix}.bam -O bam ${sra}_vs_${params.ref.prefix}.sam 
+    samtools sort -o ${sra}_vs_${params.ref.prefix}.bam -O bam ${sra}_vs_${params.ref.prefix}.sam
     """
 }
 
@@ -180,7 +184,7 @@ process samtools_index {
 
   script:
     """
-    samtools index ${sra}_vs_${params.ref.prefix}.bam 
+    samtools index ${sra}_vs_${params.ref.prefix}.bam
     """
 }
 
@@ -193,7 +197,7 @@ process stringtie {
   module 'stringtie'
   publishDir "$sra", mode: 'link'
   stageInMode "link"
-  
+
   input:
     val sra from SRAs
     // We don't really need the .bai file, but we want to ensure
@@ -201,19 +205,19 @@ process stringtie {
     // require it as an input file.
     file "${sra}_vs_${params.ref.prefix}.bam" from bam4stringtie
     file "${sra}_vs_${params.ref.prefix}.bam.bai" from bai4stringtie
-  
+
   output:
     file "${sra}_vs_${params.ref.prefix}.gtf" into stringtie_gtfs
 
   script:
     """
-    stringtie -v -p 1 -e -G ${params.ref.path}/${params.ref.prefix}.gtf -o ${sra}_vs_${params.ref.prefix}.gtf -l ${sra} ${sra}_vs_${params.ref.prefix}.bam 
+    stringtie -v -p 1 -e -G ${params.ref.path}/${params.ref.prefix}.gtf -o ${sra}_vs_${params.ref.prefix}.gtf -l ${sra} ${sra}_vs_${params.ref.prefix}.bam
     """
 }
 
 /**
  * Generates the final FPKM file
- */ 
+ */
 process fpkm {
   publishDir "$sra", mode: 'link'
   stageInMode "link"
