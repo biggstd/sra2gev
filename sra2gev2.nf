@@ -14,6 +14,7 @@ process fastq_dump {
   publishDir "$sra", mode: 'link'
   time '24h'
   tag { sra }
+
   input:
     val sra from SRAs
 
@@ -27,11 +28,13 @@ process fastq_dump {
 
 process parse_local_sra {
 
+  publishDir "$sra_filename", mode: 'link'
+
   input:
     val sra_filename from local_samples
 
   output:
-    set stdout, val("${sra_filename}") into local_raw_fastq
+    set stdout, file("${sra_filename}") into local_raw_fastq
 
     """
     #!/usr/bin/python
