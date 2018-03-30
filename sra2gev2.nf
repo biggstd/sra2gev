@@ -31,7 +31,7 @@ process parse_local_sra {
   publishDir "$sra_filename", mode: 'link'
 
   input:
-    val sra_filename from local_samples_path
+    val sra_filename from local_SRAs
 
   output:
     set stdout, file("${sra_filename}") into local_raw_fastq
