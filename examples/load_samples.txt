@@ -1,0 +1,1 @@
+SRR2302919,/home/tylerbiggs/data/SRR2302919/SRR2302919_1.fastq,

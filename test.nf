@@ -51,7 +51,7 @@ process parse_local_sra {
 }
 
 
-combined_fastq = raw_fastq.join( local_raw_fastq )
+combined_fastq = raw_fastq.mix( local_raw_fastq )
 
 
 
