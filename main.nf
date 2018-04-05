@@ -92,7 +92,7 @@ process trimmomatic {
       else
         # For ease of the next steps, rename the reverse file to the forward.
         # since these are non-paired it really shouldn't matter.
-        if [ -e ${sra}_2.fastq]; then
+        if [ -e ${sra}_2.fastq ]; then
           mv ${sra}_2.fastq ${sra}_1.fastq
         fi
         # Even though this is not paired-end, we need to create the 1s.trim.fastq
